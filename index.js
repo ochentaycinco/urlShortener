@@ -23,32 +23,40 @@ app.get('/api/hello', function(req, res) {
   res.json({ greeting: 'hello API' });
 });
 
-urlCounter = 1
-urlDatabase = []
+
+function extractDomain(url) {
+  try {
+    const parsedUrl = new URL(url)
+    return parsedUrl.hostname
+  } catch (error) {
+    return null
+  }
+}
 
 app.post('/api/shorturl', (req, res) => {
   
   const url = req.body.url;
-  const hostname = new URL(url).hostname
-  dns.lookup(hostname, (err, address) => {
-      if (err) {
-        return res.json({ error: 'invalid url' });
-      }
-      const shortUrl = urlCounter++;
-      urlDatabase.push({ original_url: url, short_url: shortUrl });
+  const domain = extractDomain(url)
 
-      res.json({ original_url: url, short_url: shortUrl });
-    });
+  dns.lookup(domain, (err, addresses) =>{ 
+    if (err || domain === null) {
+      return res.json ({error: "invalid url"})
+    }else{
+      const short_url = Object.keys(addresses).length + 1
+      addresses[short_url] = url
+      res.json({
+        original_url: `${url}`,
+        short_url: short_url
+      })
+    }
+  })
+  
 })
-app.get('/api/shorturl/:short_url', (req,res)=>{
-  const shortUrl = parseInt(req.params.short_url)
-  const entry = urlDatabase.find(item => item.short_url == shortUrl)
-  if (entry){
-    res.redirect(entry.original_url)
-  }else{
-    res.json({error:"Url not found"})
-  }
-})
+
+app.get("/api/shorturl/:url", (req, res) => {
+  const { url } = req.params;
+  res.redirect(addresses[url]);
+});
 
 
 app.listen(port, function() {
