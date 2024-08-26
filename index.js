@@ -23,6 +23,7 @@ app.get('/api/hello', function(req, res) {
   res.json({ greeting: 'hello API' });
 });
 
+addresses = {}
 
 function extractDomain(url) {
   try {
@@ -33,12 +34,14 @@ function extractDomain(url) {
   }
 }
 
+
+
 app.post('/api/shorturl', (req, res) => {
   
   const url = req.body.url;
   const domain = extractDomain(url)
 
-  dns.lookup(domain, (err, addresses) =>{ 
+  dns.lookup(domain, (err, address) =>{ 
     if (err || domain === null) {
       return res.json ({error: "invalid url"})
     }else{
@@ -53,10 +56,17 @@ app.post('/api/shorturl', (req, res) => {
   
 })
 
-app.get("/api/shorturl/:url", (req, res) => {
-  const { url } = req.params;
-  res.redirect(addresses[url]);
+app.get("/api/shorturl/:short_url", (req, res) => {
+  const { short_url } = req.params;
+  const originalUrl = addresses[short_url];
+
+  if (originalUrl) {
+    res.redirect(originalUrl);
+  } else {
+    res.json({ error: "invalid short url" });
+  }
 });
+
 
 
 app.listen(port, function() {
